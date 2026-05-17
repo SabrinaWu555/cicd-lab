@@ -1,28 +1,19 @@
-name: ci
+name: CI Homework
 
 on:
   push:
     branches:
-      - "**"
-  pull_request:
+      - '**'
 
 permissions:
   contents: read
+  actions: read
   checks: write
-
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   ci:
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: ["22", "24"]
-
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22'
           cache: npm
 
       - name: Install dependencies
@@ -44,47 +35,13 @@ jobs:
 
       - name: Run tests
         run: |
-          npx vitest run \
-            --reporter=default \
-            --reporter=vitest-junit-reporter \
-            --outputFile.junit=reports/junit.xml
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-node-${{ matrix.node-version }}
-          path: reports/junit.xml
+          mkdir -p reports
+          npm test -- --reporter=default --reporter=junit --outputFile.junit=reports/vitest-junit.xml
 
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Vitest Tests (Node ${{ matrix.node-version }})
-          path: reports/junit.xml
+          name: Vitest Tests Result
+          path: reports/vitest-junit.xml
           reporter: java-junit
-
-      - name: Compute image tag
-        id: meta
-        run: |
-          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
-
-          if [[ "$BRANCH_NAME" == release/* ]]; then
-            VERSION="${BRANCH_NAME#release/}"
-            IMAGE_TAG="release-${VERSION}"
-          else
-            IMAGE_TAG="sha-${GITHUB_SHA::7}"
-          fi
-
-          echo "branch_name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
-          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
-
-      - name: Print image metadata
-        run: |
-          echo "Node version: ${{ matrix.node-version }}"
-          echo "Branch: ${{ steps.meta.outputs.branch_name }}"
-          echo "Image tag: ${{ steps.meta.outputs.image_tag }}"
-
-      - name: Build Docker image
-        if: ${{ matrix.node-version == '24' }}
-        run: docker build -t my-app:${{ steps.meta.outputs.image_tag }} .
