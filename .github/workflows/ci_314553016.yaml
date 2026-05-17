@@ -1,14 +1,13 @@
 name: CI Homework
 
-# 1. 設定在 push 時自動執行 (佔20%)
 on:
   push:
     branches:
-      - '**' # 任何分支 push 都會觸發
+      - '**'
 
 permissions:
-  contents: write  # 給予寫入權限，以便測試報告套件可以把結果寫回 GitHub 畫面
-  checks: write    # 給予檢查權限，讓測試結果能呈現在 Actions 頁面
+  contents: write
+  checks: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -19,43 +18,33 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # 步驟一：下載程式碼
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 步驟二：安裝 Node.js 環境（參考專案範本使用 Node 22）
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
 
-      # 步驟三：安裝專案依賴套件
       - name: Install dependencies
         run: npm ci
 
-      # 步驟四：TypeScript 型別檢查 (佔20%)
-      # 任一檢查失敗，Pipeline 就會自動停下並顯示失敗 (佔20%)
       - name: TypeScript typecheck
         run: npm run typecheck
 
-      # 步驟五：Prettier 格式檢查 (佔20%)
       - name: Prettier check
         run: npm run lint
 
-      # 步驟六：執行測試並輸出 JUnit 格式報告 (佔20%)
-      # 這邊參考了專案 02_run-test.yaml 的寫法，把測試結果存到 reports 資料夾
       - name: Run tests
         run: |
           mkdir -p reports
           npm test -- --reporter=default --reporter=junit --outputFile.junit=reports/vitest-junit.xml
 
-      # 步驟七：將測試結果以漂亮的圖表顯示於 GitHub Actions 結果頁面 (佔20%)
-      # 使用 Marketplace 現成的熱門 Actions 工具：Test Reporter
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: always() # 確保即使測試失敗，也能把失敗的報告畫在畫面上！
         with:
-          name: Vitest Tests Result # 顯示在 GitHub 上的名稱
-          path: reports/vitest-junit.xml # 報告檔案路徑
-          reporter: java-junit # 告訴它格式是 junit xml
+          name: Vitest Tests Result
+          path: reports/vitest-junit.xml
+          reporter: java-junit
