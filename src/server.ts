@@ -15,3 +15,5 @@ async function start() {
 }
 
 void start();
+
+const myErrorTest: number = "this is a test which should cause a type error";

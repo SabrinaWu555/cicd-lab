@@ -1,7 +1,5 @@
 name: CI Homework
 
-const myErrorTest: number = "this is a test which should cause a type error";
-
 on:
   push:
     branches:
