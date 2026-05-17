@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   checks: write
+  statuses: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -37,14 +38,13 @@ jobs:
         run: npm run lint
 
       - name: Run tests
-        run: |
-          mkdir -p reports
-          npm test -- --reporter=default --reporter=junit --outputFile.junit=reports/vitest-junit.xml
+        continue-on-error: true 
+        run: npm test -- --reporter=junit --outputFile=vitest-junit.xml
 
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: always() # 確保即使測試失敗，也能把失敗的報告畫在畫面上！
+        if: always() # 無論如何都執行
         with:
           name: Vitest Tests Result
-          path: reports/vitest-junit.xml
+          path: '*.xml'
           reporter: java-junit
